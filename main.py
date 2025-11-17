@@ -8,7 +8,7 @@ from aiogram.client.default import DefaultBotProperties
 # =============================================
 # НАСТРОЙКИ
 # =============================================
-BOT_TOKEN = "8404787770:AAHQQ2y66dE6q1w6vX0oNetZHRhmak4ClBA"
+BOT_TOKEN = "8574536467:AAFVKcuexVEM70aZF4mpHZaB7JNDWieB3WU"
 ADMIN_USER_ID = 6283824301
 
 # Ссылки на каналы и группу
