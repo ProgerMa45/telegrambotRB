@@ -8,7 +8,7 @@ from aiogram.client.default import DefaultBotProperties
 # =============================================
 # НАСТРОЙКИ
 # =============================================
-BOT_TOKEN = "8476199583:AAGIObszhz_ucZvAxlA25NW9f68d-ItUc4g"
+BOT_TOKEN = "8560026964:AAEvBarDStm50wAPvNg0QnpvVV3rdXNY5uE"
 ADMIN_USER_ID = 6283824301  # ← Замени на свой ID пользователя Telegram
 
 # Ссылки на каналы для подписки
