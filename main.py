@@ -8,13 +8,14 @@ from aiogram.client.default import DefaultBotProperties
 # =============================================
 # НАСТРОЙКИ
 # =============================================
-BOT_TOKEN = "8560026964:AAEvBarDStm50wAPvNg0QnpvVV3rdXNY5uE"
-ADMIN_USER_ID = 6283824301  # ← Замени на свой ID пользователя Telegram
+BOT_TOKEN = "8404787770:AAHQQ2y66dE6q1w6vX0oNetZHRhmak4ClBA"
+ADMIN_USER_ID = 6283824301  # ← Замени на свой ID
 
-# Ссылки на каналы для подписки
+# Ссылки на каналы и группу
 CHANNEL_LINKS = {
-    "1": "https://t.me/Sigma4Script",
-    "2": "https://t.me/Xleb4ikScript", 
+    "channel1": "https://t.me/Sigma4Script",
+    "channel2": "https://t.me/Xleb4ikScript", 
+    "group": "https://t.me/lavashscript",  # ← Добавь ссылку на группу
     "youtube": "https://youtu.be/edUA1lwRFh8",
     "scripts": "https://t.me/+R7DwT69_eHhmMmEy"
 }
@@ -35,7 +36,6 @@ SCRIPTS = {
 bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode="HTML"))
 dp = Dispatcher()
 
-# Хранилище для ожидаемых платежей
 pending_payments = {}
 
 # Клавиатуры
@@ -45,6 +45,7 @@ def start_kb():
     k.button(text="⭐ Поддержать бота", callback_data="donate")
     k.button(text="📹 YouTube", url=CHANNEL_LINKS["youtube"])
     k.button(text="📢 Канал со скриптами", url=CHANNEL_LINKS["scripts"])
+    k.button(text="💬 Наш чат", url=CHANNEL_LINKS["group"])
     k.adjust(1)
     return k.as_markup()
 
@@ -53,16 +54,9 @@ def menu_kb():
     for name in SCRIPTS.keys():
         k.button(text=f"🎮 {name.upper()}", callback_data=f"get_{name}")
     k.button(text="⭐ Поддержать бота", callback_data="donate")
+    k.button(text="💬 Наш чат", url=CHANNEL_LINKS["group"])
     k.button(text="❓ Помощь", callback_data="help")
     k.adjust(2)
-    return k.as_markup()
-
-def sub_kb(key: str):
-    k = InlineKeyboardBuilder()
-    k.button(text="📢 Подписаться 1", url=CHANNEL_LINKS["1"])
-    k.button(text="📢 Подписаться 2", url=CHANNEL_LINKS["2"])
-    k.button(text="✅ Я подписался", callback_data=f"check_{key}")
-    k.adjust(1)
     return k.as_markup()
 
 def donate_kb():
@@ -87,15 +81,14 @@ async def send_script(target, key: str):
 # Отправка звезд
 async def send_stars(user_id: int, amount: int):
     try:
-        # Создаем инвойс для перевода звезд
         result = await bot.send_invoice(
             chat_id=user_id,
             title=f"Поддержка бота - {amount} звезд",
             description="Спасибо за вашу поддержку! ❤️",
             payload=f"donation_{amount}",
-            provider_token="",  # Для Telegram Stars не нужен
-            currency="XTR",  # Telegram Stars
-            prices=[types.LabeledPrice(label=f"{amount} звезд", amount=amount * 100)]  # 1 звезда = 100 единиц
+            provider_token="",
+            currency="XTR",
+            prices=[types.LabeledPrice(label=f"{amount} звезд", amount=amount * 100)]
         )
         return True
     except Exception as e:
@@ -103,28 +96,24 @@ async def send_stars(user_id: int, amount: int):
         return False
 
 # =============================================
-# Обработчики
+# ОБРАБОТЧИКИ
 # =============================================
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message, command: CommandObject):
-    user_id = message.from_user.id
-
     # Прямая ссылка: t.me/bot?start=owlhub
     if command.args and command.args.lower() in SCRIPTS:
         key = command.args.lower()
-        await message.answer(
-            f"<b>🔒 Для получения {key.upper()} подпишись на каналы:</b>",
-            reply_markup=sub_kb(key)
-        )
+        await send_script(message, key)
         return
 
     # Обычный старт
     await message.answer(
         "<b>👋 Привет!</b>\n\n"
         "🎮 Тут самые мощные и свежие скрипты для Roblox\n"
-        "📢 Подпишись на каналы → выбирай любой скрипт бесплатно!\n\n"
+        "📢 Подпишись на наши каналы для новых скриптов!\n\n"
         "⭐ <b>Данный бот создан и поддерживается за счет Telegram Stars</b>\n"
-        "💫 Поддержи разработчика звездами!",
+        "💫 Поддержи разработчика звездами!\n\n"
+        "💬 <b>Присоединяйся к нашему чату!</b>",
         reply_markup=start_kb()
     )
 
@@ -140,7 +129,11 @@ async def cmd_donate(message: types.Message):
 
 @dp.callback_query(F.data == "menu")
 async def show_menu(cb: types.CallbackQuery):
-    await cb.message.edit_text("🎮 <b>Выбери скрипт:</b>", reply_markup=menu_kb())
+    await cb.message.edit_text(
+        "🎮 <b>Выбери скрипт:</b>\n\n"
+        "💬 <b>Присоединяйся к нашему чату!</b>",
+        reply_markup=menu_kb()
+    )
     await cb.answer()
 
 @dp.callback_query(F.data == "donate")
@@ -192,13 +185,9 @@ async def handle_custom_amount(message: types.Message):
             success = await send_stars(user_id, amount)
             if success:
                 await message.answer(f"✅ Запрос на {amount} звезд отправлен!")
-                # Уведомляем админа
                 await bot.send_message(
                     ADMIN_USER_ID,
-                    f"⭐ Новая поддержка!\n"
-                    f"👤 Пользователь: @{message.from_user.username or 'без username'}\n"
-                    f"💫 Сумма: {amount} звезд\n"
-                    f"🆔 ID: {user_id}"
+                    f"⭐ Новая поддержка!\n👤 Пользователь: @{message.from_user.username or 'без username'}\n💫 Сумма: {amount} звезд\n🆔 ID: {user_id}"
                 )
             else:
                 await message.answer("❌ Ошибка отправки запроса")
@@ -215,40 +204,34 @@ async def handle_custom_amount(message: types.Message):
 @dp.callback_query(F.data.startswith("get_"))
 async def get_script(cb: types.CallbackQuery):
     key = cb.data.split("_", 1)[1]
-    await cb.message.edit_text(
-        f"<b>🔒 Для получения {key.upper()} подпишись на каналы:</b>",
-        reply_markup=sub_kb(key)
-    )
-    await cb.answer()
-
-@dp.callback_query(F.data.startswith("check_"))
-async def check_sub(cb: types.CallbackQuery):
-    key = cb.data.split("_", 1)[1]
+    # ВСЕГДА выдаем скрипт без проверки подписки
     await send_script(cb, key)
-    await cb.answer("🎉 Спасибо за подписку!")
+    await cb.answer()
 
 @dp.callback_query(F.data == "help")
 async def help_cmd(cb: types.CallbackQuery):
     k = InlineKeyboardBuilder()
     k.button(text="⭐ Поддержать", callback_data="donate")
+    k.button(text="💬 Наш чат", url=CHANNEL_LINKS["group"])
     k.button(text="🔙 Назад", callback_data="menu")
     
     await cb.message.edit_text(
         "<b>❓ Как пользоваться:</b>\n\n"
-        "1. 📢 Подпишись на оба канала\n"
-        "2. ✅ Нажми «Я подписался»\n"
-        "3. 🎮 Получи скрипт мгновенно\n\n"
+        "1. 🎮 Выбери скрипт\n"
+        "2. 📋 Скопируй код\n"
+        "3. 🎯 Вставь в эксплойт\n\n"
         "⭐ <b>Поддержка бота:</b>\n"
         "💫 Бот создан и поддерживается за счет Telegram Stars\n"
         "🎁 Ваша поддержка помогает развивать проект\n\n"
+        "💬 <b>Присоединяйся к нашему чату!</b>\n\n"
         "🔗 <b>Прямые ссылки:</b>\n"
-        "t.me/scriptmajproRB?start=owlhub\n"
-        "t.me/scriptmajproRB?start=infiniteyield",
+        "t.me/твойбот?start=owlhub\n"
+        "t.me/твойбот?start=infiniteyield",
         reply_markup=k.as_markup()
     )
     await cb.answer()
 
-# Обработчик успешных платежей
+# Обработчик платежей
 @dp.pre_checkout_query()
 async def process_pre_checkout(pre_checkout_query: types.PreCheckoutQuery):
     await bot.answer_pre_checkout_query(pre_checkout_query.id, ok=True)
@@ -257,20 +240,13 @@ async def process_pre_checkout(pre_checkout_query: types.PreCheckoutQuery):
 async def process_successful_payment(message: types.Message):
     amount = message.successful_payment.total_amount // 100
     await message.answer(
-        f"💫 <b>Спасибо за поддержку!</b>\n\n"
-        f"Вы отправили {amount} звезд ❤️\n"
-        f"Ваша поддержка помогает развивать бота!\n\n"
-        "🎮 Возвращаюсь в меню:",
+        f"💫 <b>Спасибо за поддержку!</b>\n\nВы отправили {amount} звезд ❤️\n\n🎮 Возвращаюсь в меню:",
         reply_markup=menu_kb()
     )
     
-    # Уведомление админу
     await bot.send_message(
         ADMIN_USER_ID,
-        f"⭐ Успешная поддержка!\n"
-        f"👤 Пользователь: @{message.from_user.username or 'без username'}\n"
-        f"💫 Сумма: {amount} звезд\n"
-        f"🆔 ID: {message.from_user.id}"
+        f"⭐ Успешная поддержка!\n👤 Пользователь: @{message.from_user.username or 'без username'}\n💫 Сумма: {amount} звезд\n🆔 ID: {message.from_user.id}"
     )
 
 # =============================================
@@ -283,7 +259,6 @@ async def main():
     print(f"🔗 Прямые ссылки:")
     print(f"t.me/{bot_user.username}?start=owlhub")
     print(f"t.me/{bot_user.username}?start=infiniteyield")
-    print(f"t.me/{bot_user.username}?start=darkhub")
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
