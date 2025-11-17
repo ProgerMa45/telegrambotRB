@@ -9,16 +9,19 @@ from aiogram.client.default import DefaultBotProperties
 # НАСТРОЙКИ
 # =============================================
 BOT_TOKEN = "8404787770:AAHQQ2y66dE6q1w6vX0oNetZHRhmak4ClBA"
-ADMIN_USER_ID = 6283824301  # ← Замени на свой ID
+ADMIN_USER_ID = 6283824301
 
 # Ссылки на каналы и группу
 CHANNEL_LINKS = {
     "channel1": "https://t.me/Sigma4Script",
     "channel2": "https://t.me/Xleb4ikScript", 
-    "group": "https://t.me/lavashscript",  # ← Добавь ссылку на группу
+    "group": "https://t.me/lavashscript",
     "youtube": "https://youtu.be/edUA1lwRFh8",
     "scripts": "https://t.me/+R7DwT69_eHhmMmEy"
 }
+
+# Username группы для проверки подписки (ТОЛЬКО ГРУППА!)
+GROUP_TO_CHECK = "@lavashscript"  # ← username группы
 
 # Скрипты
 SCRIPTS = {
@@ -37,6 +40,29 @@ bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode="HTML"))
 dp = Dispatcher()
 
 pending_payments = {}
+
+# =============================================
+# ПРОВЕРКА ПОДПИСКИ НА ГРУППУ
+# =============================================
+async def check_group_subscription(user_id: int) -> bool:
+    """
+    Проверяет, подписан ли пользователь на группу
+    """
+    try:
+        # Получаем информацию о участнике группы
+        chat_member = await bot.get_chat_member(chat_id=GROUP_TO_CHECK, user_id=user_id)
+        
+        # Проверяем статус подписки
+        if chat_member.status in ["member", "administrator", "creator"]:
+            print(f"✅ Пользователь {user_id} подписан на группу")
+            return True
+        else:
+            print(f"❌ Пользователь {user_id} НЕ подписан на группу")
+            return False
+            
+    except Exception as e:
+        print(f"🚨 Ошибка проверки группы {GROUP_TO_CHECK}: {e}")
+        return False
 
 # Клавиатуры
 def start_kb():
@@ -57,6 +83,13 @@ def menu_kb():
     k.button(text="💬 Наш чат", url=CHANNEL_LINKS["group"])
     k.button(text="❓ Помощь", callback_data="help")
     k.adjust(2)
+    return k.as_markup()
+
+def group_sub_kb(key: str):
+    k = InlineKeyboardBuilder()
+    k.button(text="💬 Присоединиться к группе", url=CHANNEL_LINKS["group"])
+    k.button(text="✅ Я вступил в группу", callback_data=f"check_{key}")
+    k.adjust(1)
     return k.as_markup()
 
 def donate_kb():
@@ -100,20 +133,30 @@ async def send_stars(user_id: int, amount: int):
 # =============================================
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message, command: CommandObject):
+    user_id = message.from_user.id
+
     # Прямая ссылка: t.me/bot?start=owlhub
     if command.args and command.args.lower() in SCRIPTS:
         key = command.args.lower()
-        await send_script(message, key)
+        # ПРОВЕРЯЕМ ПОДПИСКУ НА ГРУППУ
+        if await check_group_subscription(user_id):
+            await send_script(message, key)
+        else:
+            await message.answer(
+                f"<b>🔒 Для получения {key.upper()} нужно вступить в нашу группу:</b>\n\n"
+                "💬 <b>Присоединяйся к нашему чату чтобы получить скрипт!</b>\n\n"
+                "✅ <b>После вступления нажми «Я вступил в группу»</b>",
+                reply_markup=group_sub_kb(key)
+            )
         return
 
     # Обычный старт
     await message.answer(
         "<b>👋 Привет!</b>\n\n"
         "🎮 Тут самые мощные и свежие скрипты для Roblox\n"
-        "📢 Подпишись на наши каналы для новых скриптов!\n\n"
+        "💬 <b>Вступи в нашу группу чтобы получить скрипты!</b>\n\n"
         "⭐ <b>Данный бот создан и поддерживается за счет Telegram Stars</b>\n"
-        "💫 Поддержи разработчика звездами!\n\n"
-        "💬 <b>Присоединяйся к нашему чату!</b>",
+        "💫 Поддержи разработчика звездами!",
         reply_markup=start_kb()
     )
 
@@ -131,7 +174,7 @@ async def cmd_donate(message: types.Message):
 async def show_menu(cb: types.CallbackQuery):
     await cb.message.edit_text(
         "🎮 <b>Выбери скрипт:</b>\n\n"
-        "💬 <b>Присоединяйся к нашему чату!</b>",
+        "💬 <b>Для получения скрипта нужно вступить в нашу группу!</b>",
         reply_markup=menu_kb()
     )
     await cb.answer()
@@ -204,9 +247,27 @@ async def handle_custom_amount(message: types.Message):
 @dp.callback_query(F.data.startswith("get_"))
 async def get_script(cb: types.CallbackQuery):
     key = cb.data.split("_", 1)[1]
-    # ВСЕГДА выдаем скрипт без проверки подписки
-    await send_script(cb, key)
+    # ПРОВЕРЯЕМ ПОДПИСКУ НА ГРУППУ
+    if await check_group_subscription(cb.from_user.id):
+        await send_script(cb, key)
+    else:
+        await cb.message.edit_text(
+            f"<b>🔒 Для получения {key.upper()} нужно вступить в нашу группу:</b>\n\n"
+            "💬 <b>Присоединяйся к нашему чату чтобы получить скрипт!</b>\n\n"
+            "✅ <b>После вступления нажми «Я вступил в группу»</b>",
+            reply_markup=group_sub_kb(key)
+        )
     await cb.answer()
+
+@dp.callback_query(F.data.startswith("check_"))
+async def check_sub(cb: types.CallbackQuery):
+    key = cb.data.split("_", 1)[1]
+    # ПРОВЕРЯЕМ ПОДПИСКУ при нажатии "Я вступил в группу"
+    if await check_group_subscription(cb.from_user.id):
+        await send_script(cb, key)
+        await cb.answer("🎉 Спасибо за вступление в группу!")
+    else:
+        await cb.answer("❌ Вы не вступили в группу! Нажмите на кнопку и присоединитесь.", show_alert=True)
 
 @dp.callback_query(F.data == "help")
 async def help_cmd(cb: types.CallbackQuery):
@@ -217,9 +278,9 @@ async def help_cmd(cb: types.CallbackQuery):
     
     await cb.message.edit_text(
         "<b>❓ Как пользоваться:</b>\n\n"
-        "1. 🎮 Выбери скрипт\n"
-        "2. 📋 Скопируй код\n"
-        "3. 🎯 Вставь в эксплойт\n\n"
+        "1. 💬 Вступи в нашу группу\n"
+        "2. ✅ Нажми «Я вступил в группу»\n"
+        "3. 🎮 Получи скрипт мгновенно\n\n"
         "⭐ <b>Поддержка бота:</b>\n"
         "💫 Бот создан и поддерживается за счет Telegram Stars\n"
         "🎁 Ваша поддержка помогает развивать проект\n\n"
@@ -259,6 +320,7 @@ async def main():
     print(f"🔗 Прямые ссылки:")
     print(f"t.me/{bot_user.username}?start=owlhub")
     print(f"t.me/{bot_user.username}?start=infiniteyield")
+    print(f"⚠️ Убедись что бот добавлен как администратор в группу: {GROUP_TO_CHECK}")
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
