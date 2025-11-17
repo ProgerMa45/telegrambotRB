@@ -2,7 +2,6 @@ import asyncio
 import logging
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
-from aiogram.types import CommandObject
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.client.default import DefaultBotProperties
 
@@ -14,8 +13,8 @@ BOT_TOKEN = "8476199583:AAGIObszhz_ucZvAxlA25NW9f68d-ItUc4g"   # ← твой т
 # ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←
 # ID КАНАЛОВ! Добавь @getidsbot в канал → перешли сообщение → получишь ID
 REQUIRED_CHANNELS = [
-    -33977304543,   # ← замени на ID первого канала
-    -3287126521    # ← замени на ID второго канала
+    -1002183745123,   # ← замени на ID первого канала
+    -1002194857391    # ← замени на ID второго канала
 ]
 # =============================================
 
@@ -23,7 +22,7 @@ REQUIRED_CHANNELS = [
 CHANNEL_LINKS = {
     "1": "https://t.me/Sigma4Script",
     "2": "https://t.me/Xleb4ikScript",
-    "youtube": "https://youtu.be/JOoTdoB6UmQ?si=WUybAoG5rmz3EuR6",
+    "youtube": "https://youtu.be/edUA1lwRFh8",
     "scripts": "https://t.me/+R7DwT69_eHhmMmEy"
 }
 
@@ -92,8 +91,10 @@ async def send_script(target, key: str):
 # Обработчики
 # =============================================
 @dp.message(Command("start"))
-async def cmd_start(message: types.Message, command: CommandObject):
-    args = command.args
+async def cmd_start(message: types.Message):
+    # Получаем аргументы команды (для прямых ссылок t.me/bot?start=owlhub)
+    text_parts = message.text.split(maxsplit=1)
+    args = text_parts[1] if len(text_parts) > 1 else None
     user_id = message.from_user.id
 
     # Прямая ссылка: t.me/bot?start=owlhub
