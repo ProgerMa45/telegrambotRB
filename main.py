@@ -10,8 +10,18 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 # КОНФИГУРАЦИЯ - НАСТРОЙТЕ ЭТИ ПАРАМЕТРЫ!
 # =============================================
 
-# Токен бота из переменных окружения (добавьте в Render)
+# Токен бота из переменных окружения
 BOT_TOKEN = os.getenv("8476199583:AAGIObszhz_ucZvAxlA25NW9f68d-ItUc4g")
+
+# ЕСЛИ ТОКЕН НЕ УСТАНОВЛЕН - ВЫВОДИМ ОШИБКУ И ВЫХОДИМ
+if not BOT_TOKEN:
+    print("❌ ОШИБКА: BOT_TOKEN не установлен!")
+    print("📝 Добавьте переменную окружения BOT_TOKEN в Render")
+    print("🔧 Инструкция:")
+    print("1. Зайдите в панель Render")
+    print("2. Ваш сервис → Environment → Environment Variables")
+    print("3. Добавьте: Key: BOT_TOKEN, Value: ваш_токен_от_BotFather")
+    exit(1)
 
 # ID ваших каналов для подписки (ЗАМЕНИТЕ НА СВОИ!)
 REQUIRED_CHANNELS = ["@Sigma4Script", "@Xleb4ikScript"]
@@ -20,7 +30,7 @@ REQUIRED_CHANNELS = ["@Sigma4Script", "@Xleb4ikScript"]
 CHANNEL_LINKS = {
     "channel1": "https://t.me/Sigma4Script",
     "channel2": "https://t.me/Xleb4ikScript",
-    "youtube": "https://youtu.be/edUA1lwRFh8?si=-xoOLb2QEvAlLZnc",  
+    "youtube": "https://youtu.be/edUA1lwRFh8?si=fC4L_dsq39sFNITB",  # ЗАМЕНИТЕ на вашу ссылку YouTube
     "script_channel": "https://t.me/+R7DwT69_eHhmMmEy"    # ЗАМЕНИТЕ на канал со скриптами
 }
 
@@ -40,7 +50,6 @@ SCRIPTS_DB = {
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
-
 # =============================================
 # КЛАВИАТУРЫ
 # =============================================
