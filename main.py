@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from aiogram import Bot, Dispatcher, types, F
-from aiogram.filters import Command
+from aiogram.filters import Command, CommandObject
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.client.default import DefaultBotProperties
 
@@ -91,15 +91,12 @@ async def send_script(target, key: str):
 # Обработчики
 # =============================================
 @dp.message(Command("start"))
-async def cmd_start(message: types.Message):
-    # Получаем аргументы команды (для прямых ссылок t.me/bot?start=owlhub)
-    text_parts = message.text.split(maxsplit=1)
-    args = text_parts[1] if len(text_parts) > 1 else None
+async def cmd_start(message: types.Message, command: CommandObject):
     user_id = message.from_user.id
 
     # Прямая ссылка: t.me/bot?start=owlhub
-    if args and args.lower() in SCRIPTS:
-        key = args.lower()
+    if command.args and command.args.lower() in SCRIPTS:
+        key = command.args.lower()
         if await is_subscribed(user_id):
             await send_script(message, key)
         else:
