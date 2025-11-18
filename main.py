@@ -102,14 +102,14 @@ def donate_kb():
     k.adjust(2)
     return k.as_markup()
 
-# Выдача скрипта
+# Выдача скрипта (БЕЗ КНОПОК)
 async def send_script(target, key: str):
     code = SCRIPTS.get(key, "Скрипт временно недоступен")
     text = f"<b>🎉 Скрипт: {key.upper()}</b>\n\n<code>{code}</code>\n\n💡 Вставь в эксплойт и наслаждайся!"
     if isinstance(target, types.CallbackQuery):
-        await target.message.edit_text(text, reply_markup=menu_kb())
+        await target.message.edit_text(text)  # Убрал reply_markup
     else:
-        await target.answer(text, reply_markup=menu_kb())
+        await target.answer(text)  # Убрал reply_markup
 
 # Отправка звезд
 async def send_stars(user_id: int, amount: int):
@@ -284,10 +284,7 @@ async def help_cmd(cb: types.CallbackQuery):
         "⭐ <b>Поддержка бота:</b>\n"
         "💫 Бот создан и поддерживается за счет Telegram Stars\n"
         "🎁 Ваша поддержка помогает развивать проект\n\n"
-        "💬 <b>Присоединяйся к нашему чату!</b>\n\n"
-        "🔗 <b>Прямые ссылки:</b>\n"
-        "t.me/твойбот?start=owlhub\n"
-        "t.me/твойбот?start=infiniteyield",
+        "💬 <b>Присоединяйся к нашему чату!</b>\n\n",
         reply_markup=k.as_markup()
     )
     await cb.answer()
